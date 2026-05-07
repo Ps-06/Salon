@@ -55,9 +55,9 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   (config) => {
-    console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
-    if (config.params) console.log('Params:', config.params);
-    if (config.data) console.log('Body:', config.data);
+    //console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
+    //if (config.params) console.log('Params:', config.params);
+    //if (config.data) console.log('Body:', config.data);
     return config;
   },
   (error) => {
@@ -68,7 +68,7 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   (response) => {
-    console.log(`[API Response] ${response.status} ${response.config.url}`);
+    //console.log(`[API Response] ${response.status} ${response.config.url}`);
     return response;
   },
   (error) => {
@@ -158,12 +158,17 @@ export const authApi = {
     const res = await apiClient.post('/api/auth/send-otp', { email });
     return res.data;
   },
-  verifyOtp: async (email: string, otp: string) => {
-    const res = await apiClient.post('/api/auth/verify-otp', { email, otp });
+  verifyOtp: async (email: string, otp: string, otpSession: string, linkGoogle = false) => {
+    const res = await apiClient.post('/api/auth/verify-otp', {
+      email,
+      otp,
+      otpSession,
+      linkGoogle
+    });
     return res.data;
   },
-  googleLogin: async (token: string, email: string, name?: string) => {
-    const res = await apiClient.post('/api/auth/google', { token, email, name });
+  googleLogin: async (idToken: string, email?: string, name?: string) => {
+    const res = await apiClient.post('/api/auth/google', { idToken, email, name });
     return res.data;
   }
 };

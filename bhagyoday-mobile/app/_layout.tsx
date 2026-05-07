@@ -1,15 +1,21 @@
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
+import { StatusBar } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { THEME } from '../constants/parlour';
 import { AuthProvider, useAuth } from '../context/auth';
+import AppLoadingScreen from '../components/AppLoadingScreen';
 
 function RootLayoutNav() {
   const { userToken, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const [bootAnimationComplete, setBootAnimationComplete] = useState(false);
+
+  const handleBootAnimationComplete = useCallback(() => {
+    setBootAnimationComplete(true);
+  }, []);
 
   useEffect(() => {
     if (isLoading) return;
@@ -26,19 +32,14 @@ function RootLayoutNav() {
     }
   }, [userToken, isLoading, segments]);
 
-  if (isLoading) return null; // Shows nothing while checking AsyncStorage
+  if (isLoading || !bootAnimationComplete) {
+    return <AppLoadingScreen onAnimationComplete={handleBootAnimationComplete} />;
+  }
 
   return (
     <Stack
       screenOptions={{
-        headerStyle: { 
-          backgroundColor: THEME.colors.primary 
-        },
-        headerTintColor: THEME.colors.surface,
-        headerTitleStyle: { 
-          fontWeight: 'bold' 
-        },
-        headerTitleAlign: 'center',
+        headerShown: false,
       }}
     >
       <Stack.Screen 
@@ -70,9 +71,13 @@ export default function Layout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <StatusBar style="light" backgroundColor={THEME.colors.primaryDark} />
         {/* Wrap the app in the AuthProvider */}
         <AuthProvider>
+          <StatusBar
+            hidden={true}
+            translucent
+            backgroundColor="transparent"
+          />
           <RootLayoutNav />
         </AuthProvider>
       </SafeAreaProvider>

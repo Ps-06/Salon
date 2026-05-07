@@ -1,31 +1,128 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TextInput, 
-  TouchableOpacity, 
+import React, { useState, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
   ActivityIndicator,
   Platform,
-  Alert
+ Animated,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Dimensions,
+  StatusBar,
 } from 'react-native';
+
 import { router } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import * as Haptics from 'expo-haptics';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+
 import { api, Order } from '../services/api';
-import { THEME, SERVICES, STYLISTS, PAYMENT_METHODS, ORDER_STATUSES } from '../constants/parlour';
+
+const { width } = Dimensions.get('window');
 
 type FormData = Omit<Order, 'id' | 'created_at' | 'updated_at'>;
 
+const PALETTE = {
+  rosegold: '#C9956A',
+  rosegoldLight: '#E8BFA0',
+  rosegoldDark: '#A07040',
+
+  plum: '#2D1B3D',
+  plumMid: '#3D2455',
+  plumLight: '#5C3A75',
+
+  cream: '#FDF6F0',
+  warmWhite: '#FFFFFF',
+
+  textDark: '#1A0E26',
+  textMid: '#6B5680',
+  textLight: '#9E88B0',
+
+  border: 'rgba(201,149,106,0.25)',
+
+  success: '#22C55E',
+  error: '#EF4444',
+  warning: '#F59E0B',
+};
+
 export default function NewOrder() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
-  const { control, handleSubmit, formState: { errors }, setValue, watch } = useForm<FormData>({
+  const [snackbar, setSnackbar] = useState({
+    visible: false,
+    message: '',
+    type: 'success',
+  });
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(25)).current;
+  const snackbarAnim = useRef(new Animated.Value(120)).current;
+
+  React.useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 550,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        friction: 7,
+        tension: 55,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  const showSnackbar = (
+    message: string,
+    type: 'success' | 'error' | 'warning' = 'success'
+  ) => {
+    setSnackbar({
+      visible: true,
+      message,
+      type,
+    });
+
+    Animated.sequence([
+      Animated.timing(snackbarAnim, {
+        toValue: 0,
+        duration: 320,
+        useNativeDriver: true,
+      }),
+      Animated.delay(2300),
+      Animated.timing(snackbarAnim, {
+        toValue: 120,
+        duration: 260,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setSnackbar((prev) => ({
+        ...prev,
+        visible: false,
+      }));
+    });
+  };
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+  } = useForm<FormData>({
     defaultValues: {
       client_name: '',
       phone: '',
@@ -36,8 +133,11 @@ export default function NewOrder() {
       status: 'Pending',
       notes: '',
       appointment_date: new Date().toISOString().split('T')[0],
-      appointment_time: new Date().toTimeString().split('T')[0].substring(0, 5),
-    }
+      appointment_time: new Date()
+        .toTimeString()
+        .split('T')[0]
+        .substring(0, 5),
+    },
   });
 
   const currentDateStr = watch('appointment_date');
@@ -46,379 +146,822 @@ export default function NewOrder() {
   const onSubmit = async (data: FormData) => {
     try {
       setIsSubmitting(true);
+
       await api.createOrder(data);
-      
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Success', 'Order created successfully!', [
-        { text: 'OK', onPress: () => router.back() }
-      ]);
+
+      Haptics.notificationAsync(
+        Haptics.NotificationFeedbackType.Success
+      );
+
+      showSnackbar('Order created successfully', 'success');
+
+      setTimeout(() => {
+        router.back();
+      }, 900);
     } catch (error: any) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', error.message || 'Failed to create order');
+      Haptics.notificationAsync(
+        Haptics.NotificationFeedbackType.Error
+      );
+
+      showSnackbar(
+        error.message || 'Failed to create order',
+        'error'
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleFormSubmit = () => {
+    Keyboard.dismiss();
+
+    handleSubmit(onSubmit, () => {
+      Haptics.notificationAsync(
+        Haptics.NotificationFeedbackType.Error
+      );
+
+      showSnackbar(
+        'Please fix all required fields',
+        'error'
+      );
+    })();
+  };
+
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
+
     if (selectedDate) {
-      setValue('appointment_date', selectedDate.toISOString().split('T')[0]);
+      setValue(
+        'appointment_date',
+        selectedDate.toISOString().split('T')[0]
+      );
     }
   };
 
   const handleTimeChange = (event: any, selectedTime?: Date) => {
     setShowTimePicker(Platform.OS === 'ios');
+
     if (selectedTime) {
-      setValue('appointment_time', selectedTime.toTimeString().split(' ')[0].substring(0, 5));
+      setValue(
+        'appointment_time',
+        selectedTime
+          .toTimeString()
+          .split(' ')[0]
+          .substring(0, 5)
+      );
     }
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Client Details</Text>
-        
-        {/* Client Name */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Client Name *</Text>
-          <Controller
-            control={control}
-            rules={{ required: 'Client name is required' }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={[styles.input, errors.client_name && styles.inputError]}
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                placeholder="Enter full name"
-                placeholderTextColor={THEME.colors.textSecondary}
-              />
-            )}
-            name="client_name"
-          />
-          {errors.client_name && <Text style={styles.errorText}>{errors.client_name.message}</Text>}
-        </View>
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="light-content" />
 
-        {/* Phone */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Phone Number</Text>
-          <Controller
-            control={control}
-            rules={{ 
-              pattern: {
-                value: /^[6-9]\d{9}$/,
-                message: 'Enter a valid 10-digit Indian phone number'
-              }
-            }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={[styles.input, errors.phone && styles.inputError]}
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                placeholder="e.g. 9876543210"
-                keyboardType="numeric"
-                maxLength={10}
-                placeholderTextColor={THEME.colors.textSecondary}
-              />
-            )}
-            name="phone"
-          />
-          {errors.phone && <Text style={styles.errorText}>{errors.phone.message}</Text>}
-        </View>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Service Details</Text>
-
-        {/* Service */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Service *</Text>
-          <Controller
-            control={control}
-            rules={{ required: 'Service is required' }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={[styles.input, errors.service && styles.inputError]}
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                placeholder="e.g. Haircut, Bridal Makeup..."
-                placeholderTextColor={THEME.colors.textSecondary}
-              />
-            )}
-            name="service"
-          />
-          {errors.service && <Text style={styles.errorText}>{errors.service.message}</Text>}
-        </View>
-
-        {/* Stylist */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Stylist *</Text>
-          <Controller
-            control={control}
-            rules={{ required: 'Stylist name is required' }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={[styles.input, errors.stylist && styles.inputError]}
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                placeholder="e.g. Priya, Anjali..."
-                placeholderTextColor={THEME.colors.textSecondary}
-              />
-            )}
-            name="stylist"
-          />
-          {errors.stylist && <Text style={styles.errorText}>{errors.stylist.message}</Text>}
-        </View>
-
-        {/* Price */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Price (₹) *</Text>
-          <Controller
-            control={control}
-            rules={{ required: 'Price is required', min: { value: 0, message: 'Invalid price' } }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <View style={styles.priceInputContainer}>
-                <Text style={styles.currencySymbol}>₹</Text>
-                <TextInput
-                  style={[styles.input, styles.priceInput, errors.price && styles.inputError]}
-                  onBlur={onBlur}
-                  onChangeText={(val) => onChange(Number(val))}
-                  value={value ? value.toString() : ''}
-                  keyboardType="numeric"
-                  placeholder="0.00"
-                  placeholderTextColor={THEME.colors.textSecondary}
-                />
-              </View>
-            )}
-            name="price"
-          />
-          {errors.price && <Text style={styles.errorText}>{errors.price.message}</Text>}
-        </View>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Schedule & Payment</Text>
-
-        {/* Date and Time row */}
-        <View style={styles.row}>
-          <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-            <Text style={styles.label}>Date *</Text>
-            <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
-              <Text style={{ color: THEME.colors.text }}>{currentDateStr}</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-            <Text style={styles.label}>Time *</Text>
-            <TouchableOpacity style={styles.input} onPress={() => setShowTimePicker(true)}>
-              <Text style={{ color: THEME.colors.text }}>{currentTimeStr}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {showDatePicker && (
-          <DateTimePicker
-            value={new Date(currentDateStr)}
-            mode="date"
-            display="default"
-            onChange={handleDateChange}
-          />
-        )}
-
-        {showTimePicker && (
-          <DateTimePicker
-            value={new Date(`${currentDateStr}T${currentTimeStr}:00`)}
-            mode="time"
-            display="default"
-            onChange={handleTimeChange}
-          />
-        )}
-
-        {/* Payment Method */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Payment Method</Text>
-          <View style={styles.pickerContainer}>
-            <Controller
-              control={control}
-              render={({ field: { onChange, value } }) => (
-                <Picker selectedValue={value} onValueChange={onChange} style={styles.picker}>
-                  {PAYMENT_METHODS.map(s => <Picker.Item key={s} label={s} value={s} />)}
-                </Picker>
-              )}
-              name="payment_method"
-            />
-          </View>
-        </View>
-
-        {/* Status */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Status</Text>
-          <View style={styles.pickerContainer}>
-            <Controller
-              control={control}
-              render={({ field: { onChange, value } }) => (
-                <Picker selectedValue={value} onValueChange={onChange} style={styles.picker}>
-                  {ORDER_STATUSES.map(s => <Picker.Item key={s} label={s} value={s} />)}
-                </Picker>
-              )}
-              name="status"
-            />
-          </View>
-        </View>
-
-        {/* Notes */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Notes</Text>
-          <Controller
-            control={control}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                multiline
-                numberOfLines={3}
-                placeholder="Any special requests or details..."
-                placeholderTextColor={THEME.colors.textSecondary}
-                textAlignVertical="top"
-              />
-            )}
-            name="notes"
-          />
-        </View>
-      </View>
-
-      <TouchableOpacity 
-        style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]} 
-        onPress={handleSubmit(onSubmit)}
-        disabled={isSubmitting}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {isSubmitting ? (
-          <ActivityIndicator color={THEME.colors.surface} />
-        ) : (
-          <Text style={styles.submitButtonText}>Create Order</Text>
-        )}
-      </TouchableOpacity>
-      
-      <View style={{ height: 40 }} />
-    </ScrollView>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView
+            style={{ flex: 1 }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 140 }}
+          >
+            <Animated.View
+              style={{
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              }}
+            >
+              <LinearGradient
+                colors={[PALETTE.plum, PALETTE.plumMid]}
+                style={styles.header}
+              >
+                <View style={styles.glowOne} />
+                <View style={styles.glowTwo} />
+
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  style={styles.backButton}
+                  onPress={() => router.back()}
+                >
+                  <Ionicons
+                    name="arrow-back"
+                    size={22}
+                    color="#fff"
+                  />
+                </TouchableOpacity>
+
+                <Text style={styles.headerTitle}>New Order</Text>
+
+                <Text style={styles.headerSubtitle}>
+                  Enter client and service details
+                </Text>
+              </LinearGradient>
+
+              <View style={styles.content}>
+                {/* Client Details */}
+                <View style={styles.card}>
+                  <Text style={styles.sectionTitle}>
+                    Client Details
+                  </Text>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>
+                      Client Name *
+                    </Text>
+
+                    <Controller
+                      control={control}
+                      name="client_name"
+                      rules={{
+                        required: 'Client name is required',
+                        minLength: {
+                          value: 3,
+                          message:
+                            'Minimum 3 characters required',
+                        },
+                      }}
+                      render={({
+                        field: { onChange, value },
+                      }) => (
+                        <TextInput
+                          style={[
+                            styles.input,
+                            errors.client_name &&
+                              styles.inputError,
+                          ]}
+                          value={value}
+                          onChangeText={onChange}
+                          placeholder="Enter full name"
+                          placeholderTextColor={
+                            PALETTE.textLight
+                          }
+                        />
+                      )}
+                    />
+
+                    {errors.client_name && (
+                      <Text style={styles.errorText}>
+                        {errors.client_name.message}
+                      </Text>
+                    )}
+                  </View>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>
+                      Phone Number
+                    </Text>
+
+                    <Controller
+                      control={control}
+                      name="phone"
+                      rules={{
+                        pattern: {
+                          value: /^\d{10}$/,
+                          message:
+                            'Phone number must be 10 digits',
+                        },
+                      }}
+                      render={({
+                        field: { onChange, value },
+                      }) => (
+                        <TextInput
+                          style={[
+                            styles.input,
+                            errors.phone &&
+                              styles.inputError,
+                          ]}
+                          value={value}
+                          onChangeText={onChange}
+                          keyboardType="number-pad"
+                          maxLength={10}
+                          placeholder="9876543210"
+                          placeholderTextColor={
+                            PALETTE.textLight
+                          }
+                        />
+                      )}
+                    />
+
+                    {errors.phone && (
+                      <Text style={styles.errorText}>
+                        {errors.phone.message}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+
+                {/* Service */}
+                <View style={styles.card}>
+                  <Text style={styles.sectionTitle}>
+                    Service Details
+                  </Text>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>
+                      Service *
+                    </Text>
+
+                    <Controller
+                      control={control}
+                      name="service"
+                      rules={{
+                        required: 'Service is required',
+                      }}
+                      render={({
+                        field: { onChange, value },
+                      }) => (
+                        <TextInput
+                          style={[
+                            styles.input,
+                            errors.service &&
+                              styles.inputError,
+                          ]}
+                          value={value}
+                          onChangeText={onChange}
+                          placeholder="Haircut, Bridal Makeup..."
+                          placeholderTextColor={
+                            PALETTE.textLight
+                          }
+                        />
+                      )}
+                    />
+
+                    {errors.service && (
+                      <Text style={styles.errorText}>
+                        {errors.service.message}
+                      </Text>
+                    )}
+                  </View>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>
+                      Stylist *
+                    </Text>
+
+                    <Controller
+                      control={control}
+                      name="stylist"
+                      rules={{
+                        required:
+                          'Stylist name is required',
+                      }}
+                      render={({
+                        field: { onChange, value },
+                      }) => (
+                        <TextInput
+                          style={[
+                            styles.input,
+                            errors.stylist &&
+                              styles.inputError,
+                          ]}
+                          value={value}
+                          onChangeText={onChange}
+                          placeholder="Priya, Anjali..."
+                          placeholderTextColor={
+                            PALETTE.textLight
+                          }
+                        />
+                      )}
+                    />
+
+                    {errors.stylist && (
+                      <Text style={styles.errorText}>
+                        {errors.stylist.message}
+                      </Text>
+                    )}
+                  </View>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>
+                      Price *
+                    </Text>
+
+                    <Controller
+                      control={control}
+                      name="price"
+                      rules={{
+                        required: 'Price is required',
+                        min: {
+                          value: 1,
+                          message:
+                            'Price should be greater than 0',
+                        },
+                      }}
+                      render={({
+                        field: { onChange, value },
+                      }) => (
+                        <View
+                          style={[
+                            styles.priceContainer,
+                            errors.price &&
+                              styles.inputError,
+                          ]}
+                        >
+                          <Text style={styles.rupee}>
+                            ₹
+                          </Text>
+
+                          <TextInput
+                            style={styles.priceInput}
+                            value={
+                              value
+                                ? value.toString()
+                                : ''
+                            }
+                            onChangeText={(v) =>
+                              onChange(Number(v))
+                            }
+                            keyboardType="numeric"
+                            placeholder="0.00"
+                            placeholderTextColor={
+                              PALETTE.textLight
+                            }
+                          />
+                        </View>
+                      )}
+                    />
+
+                    {errors.price && (
+                      <Text style={styles.errorText}>
+                        {errors.price.message}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+
+                {/* Schedule */}
+                <View style={styles.card}>
+                  <Text style={styles.sectionTitle}>
+                    Schedule & Payment
+                  </Text>
+
+                  <View style={styles.row}>
+                    <TouchableOpacity
+                      activeOpacity={0.9}
+                      style={styles.dateCard}
+                      onPress={() =>
+                        setShowDatePicker(true)
+                      }
+                    >
+                      <Ionicons
+                        name="calendar-outline"
+                        size={22}
+                        color={PALETTE.rosegold}
+                      />
+
+                      <Text style={styles.dateText}>
+                        {currentDateStr}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      activeOpacity={0.9}
+                      style={styles.dateCard}
+                      onPress={() =>
+                        setShowTimePicker(true)
+                      }
+                    >
+                      <Ionicons
+                        name="time-outline"
+                        size={22}
+                        color={PALETTE.rosegold}
+                      />
+
+                      <Text style={styles.dateText}>
+                        {currentTimeStr}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {showDatePicker && (
+                    <DateTimePicker
+                      value={new Date(currentDateStr)}
+                      mode="date"
+                      display="default"
+                      onChange={handleDateChange}
+                    />
+                  )}
+
+                  {showTimePicker && (
+                    <DateTimePicker
+                      value={new Date(
+                        `${currentDateStr}T${currentTimeStr}:00`
+                      )}
+                      mode="time"
+                      display="default"
+                      onChange={handleTimeChange}
+                    />
+                  )}
+
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>
+                      Payment Method
+                    </Text>
+
+                    <View style={styles.pickerContainer}>
+                      <Controller
+                        control={control}
+                        name="payment_method"
+                        render={({
+                          field: {
+                            onChange,
+                            value,
+                          },
+                        }) => (
+                          <Picker
+                            selectedValue={value}
+                            onValueChange={onChange}
+                            dropdownIconColor={
+                              PALETTE.rosegold
+                            }
+                            style={styles.picker}
+                          >
+                            <Picker.Item
+                              label="Cash"
+                              value="Cash"
+                            />
+                            <Picker.Item
+                              label="UPI"
+                              value="UPI"
+                            />
+                            <Picker.Item
+                              label="Card"
+                              value="Card"
+                            />
+                          </Picker>
+                        )}
+                      />
+                    </View>
+                  </View>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>
+                      Notes
+                    </Text>
+
+                    <Controller
+                      control={control}
+                      name="notes"
+                      render={({
+                        field: { onChange, value },
+                      }) => (
+                        <TextInput
+                          style={[
+                            styles.input,
+                            styles.textArea,
+                          ]}
+                          multiline
+                          numberOfLines={4}
+                          textAlignVertical="top"
+                          value={value}
+                          onChangeText={onChange}
+                          placeholder="Special instructions..."
+                          placeholderTextColor={
+                            PALETTE.textLight
+                          }
+                        />
+                      )}
+                    />
+                  </View>
+                </View>
+
+                {/* Submit */}
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  disabled={isSubmitting}
+                  onPress={handleFormSubmit}
+                  style={styles.submitWrap}
+                >
+                  <LinearGradient
+                    colors={[
+                      PALETTE.rosegold,
+                      PALETTE.rosegoldDark,
+                    ]}
+                    style={styles.submitButton}
+                  >
+                    {isSubmitting ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <>
+                        <Ionicons
+                          name="sparkles"
+                          size={20}
+                          color="#fff"
+                          style={{ marginRight: 10 }}
+                        />
+
+                        <Text
+                          style={styles.submitText}
+                        >
+                          Create Order
+                        </Text>
+                      </>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+
+                <View style={{ height: 120 }} />
+              </View>
+            </Animated.View>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+
+      {/* Snackbar */}
+      {snackbar.visible && (
+        <Animated.View
+          style={[
+            styles.snackbar,
+            {
+              backgroundColor:
+                snackbar.type === 'success'
+                  ? '#22C55E'
+                  : snackbar.type === 'error'
+                  ? '#EF4444'
+                  : '#F59E0B',
+
+              transform: [
+                {
+                  translateY: snackbarAnim,
+                },
+              ],
+            },
+          ]}
+        >
+          <Ionicons
+            name={
+              snackbar.type === 'success'
+                ? 'checkmark-circle'
+                : snackbar.type === 'error'
+                ? 'close-circle'
+                : 'warning'
+            }
+            size={18}
+            color="#fff"
+            style={{ marginRight: 8 }}
+          />
+
+          <Text style={styles.snackbarText}>
+            {snackbar.message}
+          </Text>
+        </Animated.View>
+      )}
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safe: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
+    marginTop:
+      Platform.OS === 'android'
+        ? -(StatusBar.currentHeight || 0)
+        : 0,
+    backgroundColor: PALETTE.cream,
   },
+
+  header: {
+    paddingTop: 30,
+    paddingBottom: 34,
+    paddingHorizontal: 22,
+    borderBottomLeftRadius: 34,
+    borderBottomRightRadius: 34,
+    overflow: 'hidden',
+  },
+
+  glowOne: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 100,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    top: -60,
+    right: -40,
+  },
+
+  glowTwo: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 100,
+    backgroundColor: 'rgba(201,149,106,0.15)',
+    bottom: -30,
+    left: -20,
+  },
+
+  backButton: {
+    width: 46,
+    height: 46,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginBottom: 24,
+  },
+
+  headerTitle: {
+    fontSize: 30,
+    fontWeight: '800',
+    color: '#fff',
+  },
+
+  headerSubtitle: {
+    marginTop: 6,
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.7)',
+    fontWeight: '600',
+  },
+
   content: {
-    padding: THEME.spacing.md,
+    padding: 18,
+    paddingBottom: 120,
   },
+
   card: {
-    backgroundColor: THEME.colors.surface,
-    borderRadius: THEME.borderRadius.lg,
-    padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.lg,
-    elevation: 2,
+    backgroundColor: '#fff',
+    borderRadius: 28,
+    padding: 18,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+
+    elevation: 5,
   },
+
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: THEME.colors.primaryDark,
-    marginBottom: THEME.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: THEME.colors.border,
-    paddingBottom: 8,
+    fontSize: 20,
+    fontWeight: '800',
+    color: PALETTE.textDark,
+    marginBottom: 20,
   },
+
   inputGroup: {
-    marginBottom: THEME.spacing.md,
+    marginBottom: 18,
   },
+
+  label: {
+    marginBottom: 8,
+    color: PALETTE.textMid,
+    fontWeight: '700',
+    fontSize: 13,
+  },
+
+  input: {
+    backgroundColor: '#FAF7FC',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+    color: PALETTE.textDark,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+
+  inputError: {
+    borderColor: PALETTE.error,
+  },
+
+  errorText: {
+    marginTop: 6,
+    color: PALETTE.error,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FAF7FC',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+    paddingHorizontal: 16,
+  },
+
+  rupee: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: PALETTE.rosegold,
+    marginRight: 10,
+  },
+
+  priceInput: {
+    flex: 1,
+    paddingVertical: 15,
+    fontSize: 15,
+    color: PALETTE.textDark,
+    fontWeight: '700',
+  },
+
+  textArea: {
+    height: 120,
+  },
+
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginBottom: 18,
+    gap: 12,
   },
-  label: {
-    fontSize: 14,
-    color: THEME.colors.textSecondary,
-    marginBottom: 6,
-    fontWeight: '500',
-  },
-  input: {
-    backgroundColor: THEME.colors.background,
-    borderWidth: 1,
-    borderColor: THEME.colors.border,
-    borderRadius: THEME.borderRadius.md,
-    paddingHorizontal: THEME.spacing.md,
-    paddingVertical: Platform.OS === 'ios' ? 12 : 10,
-    fontSize: 16,
-    color: THEME.colors.text,
-  },
-  priceInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: THEME.colors.background,
-    borderWidth: 1,
-    borderColor: THEME.colors.border,
-    borderRadius: THEME.borderRadius.md,
-  },
-  currencySymbol: {
-    fontSize: 18,
-    paddingLeft: THEME.spacing.md,
-    color: THEME.colors.textSecondary,
-  },
-  priceInput: {
+
+  dateCard: {
     flex: 1,
-    borderWidth: 0,
-    backgroundColor: 'transparent',
-  },
-  textArea: {
-    height: 80,
-  },
-  inputError: {
-    borderColor: THEME.colors.error,
-  },
-  errorText: {
-    color: THEME.colors.error,
-    fontSize: 12,
-    marginTop: 4,
-  },
-  pickerContainer: {
-    backgroundColor: THEME.colors.background,
-    borderWidth: 1,
-    borderColor: THEME.colors.border,
-    borderRadius: THEME.borderRadius.md,
-    overflow: 'hidden',
-  },
-  picker: {
-    height: Platform.OS === 'ios' ? 150 : 50,
-    width: '100%',
-  },
-  submitButton: {
-    backgroundColor: THEME.colors.primary,
-    borderRadius: THEME.borderRadius.lg,
-    paddingVertical: THEME.spacing.md,
+    backgroundColor: '#FAF7FC',
+    borderRadius: 20,
+    paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 3,
-    shadowColor: THEME.colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
+    borderWidth: 1,
+    borderColor: PALETTE.border,
   },
-  submitButtonDisabled: {
-    backgroundColor: THEME.colors.primaryLight,
+
+  dateText: {
+    marginTop: 8,
+    color: PALETTE.textDark,
+    fontWeight: '700',
   },
-  submitButtonText: {
-    color: THEME.colors.surface,
-    fontSize: 18,
-    fontWeight: 'bold',
-  }
+
+  pickerContainer: {
+    overflow: 'hidden',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    backgroundColor: '#FAF7FC',
+  },
+
+  picker: {
+    height: Platform.OS === 'ios' ? 160 : 54,
+    width: '100%',
+    color: PALETTE.textDark,
+  },
+
+  submitWrap: {
+    borderRadius: 24,
+    overflow: 'hidden',
+  },
+
+  submitButton: {
+    height: 62,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+
+    shadowColor: PALETTE.rosegold,
+    shadowOpacity: 0.25,
+    shadowRadius: 18,
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+
+    elevation: 8,
+  },
+
+  submitText: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: 16,
+  },
+
+  snackbar: {
+    position: 'absolute',
+    left: 18,
+    right: 18,
+    bottom: Platform.OS === 'android' ? 95 : 40,
+
+    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+
+    flexDirection: 'row',
+    alignItems: 'center',
+
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: {
+      width: 0,
+      height: 5,
+    },
+
+    elevation: 8,
+  },
+
+  snackbarText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 13,
+  },
 });
