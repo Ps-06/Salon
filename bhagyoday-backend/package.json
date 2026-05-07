@@ -1,0 +1,19 @@
+{
+  "name": "bhagyoday-backend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:create": "wrangler d1 create bhagyoday_db",
+    "db:migrate": "wrangler d1 execute bhagyoday_db --file=./schema.sql"
+  },
+  "dependencies": {
+    "hono": "^4.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240512.0",
+    "typescript": "^5.0.0",
+    "wrangler": "^4.88.0"
+  }
+}

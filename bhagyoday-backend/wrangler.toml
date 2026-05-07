@@ -1,0 +1,8 @@
+name = "bhagyoday-api"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "bhagyoday_db"
+database_id = "26822110-4a9b-441d-81a5-7bdaa8601eeb"

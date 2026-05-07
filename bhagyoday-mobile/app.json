@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "Bhagyoday Parlour",
+    "slug": "bhagyoday-mobile",
+    "version": "1.0.0",
+    "scheme": "bhagyoday",
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
