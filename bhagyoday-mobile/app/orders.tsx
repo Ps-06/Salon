@@ -524,7 +524,27 @@ export default function Orders() {
           <View style={styles.glowTwo} />
 
           <View style={styles.headerTop}>
-            <View>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => router.back()}
+              style={styles.backButton}
+            >
+              <LinearGradient
+                colors={[
+                  'rgba(255,255,255,0.15)',
+                  'rgba(255,255,255,0.08)',
+                ]}
+                style={styles.backButtonGradient}
+              >
+                <Ionicons
+                  name="chevron-back"
+                  size={24}
+                  color="#fff"
+                />
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <View style={styles.headerContent}>
               <Text style={styles.headerTitle}>
                 Orders
               </Text>
@@ -541,6 +561,7 @@ export default function Orders() {
               onPress={() =>
                 router.push('/new-order')
               }
+              style={styles.addButton}
             >
               <LinearGradient
                 colors={[
@@ -653,9 +674,8 @@ export default function Orders() {
         ) : (
           <FlatList
             data={orders}
-            keyExtractor={(item) =>
-              item.id?.toString() ||
-              Math.random().toString()
+            keyExtractor={(item, index) =>
+              (item && item.id != null ? String(item.id) : String(index))
             }
             renderItem={({ item }) => (
               <OrderCard
@@ -1064,7 +1084,7 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    paddingTop: 28,
+    paddingTop: 40,
     paddingBottom: 24,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 34,
@@ -1099,6 +1119,36 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 24,
+    gap: 16,
+  },
+
+  backButton: {
+    width: 54,
+    height: 54,
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+
+  backButtonGradient: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+
+  addButton: {
+    width: 54,
+    height: 54,
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+
+  headerContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   headerTitle: {

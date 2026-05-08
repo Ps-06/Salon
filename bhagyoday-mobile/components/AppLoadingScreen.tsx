@@ -8,6 +8,7 @@ import {
   Dimensions,
   StatusBar,
   Platform,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -403,13 +404,11 @@ export default function AppLoadingScreen({ onAnimationComplete }: AppLoadingScre
             ]}
             style={styles.logoCircle}
           >
-            <View style={styles.logoInner}>
-              <Ionicons
-                name="sparkles"
-                size={42}
-                color={PALETTE.rosegoldLight}
-              />
-            </View>
+            <Image
+              source={require('../assets/Bhagyoday_Logo.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </LinearGradient>
 
           {/* FLOATING SPARKLES */}
@@ -515,42 +514,37 @@ const styles = StyleSheet.create({
 
   // ─ LOGO
   logoWrapper: {
-    marginBottom: 34,
+    marginBottom: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   glow: {
     position: 'absolute',
-    width: 160,
-    height: 160,
-    borderRadius: 80,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
     backgroundColor: PALETTE.rosegold,
   },
 
   logoCircle: {
-    width: 118,
-    height: 118,
-    borderRadius: 59,
+    width: 156,
+    height: 156,
+    borderRadius: 78,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.18)',
 
     shadowColor: PALETTE.rosegold,
-    shadowOffset: { width: 0, height: 12 },
+    shadowOffset: { width: 0, height: 18 },
     shadowOpacity: 0.45,
-    shadowRadius: 24,
-    elevation: 14,
+    shadowRadius: 30,
   },
 
-  logoInner: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: 'rgba(201,149,106,0.18)',
-    justifyContent: 'center',
-    alignItems: 'center',
+  logoImage: {
+    width: 200,
+    height: 200,
   },
 
   sparkle: {

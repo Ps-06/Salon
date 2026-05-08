@@ -260,15 +260,15 @@ export default function Reports() {
   }
 
   const maxServiceCount = Math.max(
-    ...stats.top_services.map(
-      (s) => s.count
+    ...(stats.top_services || []).map(
+      (s) => s.count || 0
     ),
     1
   );
 
   const maxStylistRevenue = Math.max(
-    ...stats.stylist_performance.map(
-      (s) => s.revenue
+    ...(stats.stylist_performance || []).map(
+      (s) => s.revenue || 0
     ),
     1
   );
@@ -415,7 +415,7 @@ export default function Reports() {
                   }
                 >
                   ₹
-                  {stats.today.revenue.toFixed(
+                  {(stats.today?.revenue || 0).toFixed(
                     2
                   )}
                 </Text>
@@ -426,7 +426,7 @@ export default function Reports() {
                   }
                 >
                   {
-                    stats.today.count
+                    stats.today?.count || 0
                   }{' '}
                   orders
                 </Text>
@@ -463,7 +463,7 @@ export default function Reports() {
                   }
                 >
                   ₹
-                  {stats.this_week.revenue.toFixed(
+                  {(stats.this_week?.revenue || 0).toFixed(
                     2
                   )}
                 </Text>
@@ -475,7 +475,7 @@ export default function Reports() {
                 >
                   {
                     stats.this_week
-                      .count
+                      ?.count || 0
                   }{' '}
                   orders
                 </Text>
@@ -522,7 +522,7 @@ export default function Reports() {
                   ]}
                 >
                   ₹
-                  {stats.all_time.revenue.toFixed(
+                  {(stats.all_time?.revenue || 0).toFixed(
                     2
                   )}
                 </Text>
@@ -538,7 +538,7 @@ export default function Reports() {
                 >
                   {
                     stats.all_time
-                      .count
+                      ?.count || 0
                   }{' '}
                   completed orders
                 </Text>
@@ -567,7 +567,7 @@ export default function Reports() {
                     index
                   ) => {
                     const percentage =
-                      (stylist.revenue /
+                      ((stylist.revenue || 0) /
                         maxStylistRevenue) *
                       100;
 
@@ -621,7 +621,7 @@ export default function Reports() {
                                 }
                               >
                                 {
-                                  stylist.count
+                                  stylist.count || 0
                                 }{' '}
                                 completed
                                 orders
@@ -635,7 +635,7 @@ export default function Reports() {
                             }
                           >
                             ₹
-                            {stylist.revenue.toFixed(
+                            {(stylist.revenue || 0).toFixed(
                               2
                             )}
                           </Text>
@@ -687,7 +687,7 @@ export default function Reports() {
                     index
                   ) => {
                     const percentage =
-                      (service.count /
+                      ((service.count || 0) /
                         maxServiceCount) *
                       100;
 
@@ -743,7 +743,7 @@ export default function Reports() {
                             }
                           >
                             {
-                              service.count
+                              service.count || 0
                             }
                             x
                           </Text>

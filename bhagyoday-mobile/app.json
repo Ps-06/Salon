@@ -1,24 +1,24 @@
 {
   "expo": {
-    "name": "Bhagyoday Parlour",
+    "name": "Bhagyoday",
     "slug": "bhagyoday-mobile",
     "version": "1.0.0",
     "scheme": "bhagyoday",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/Bhagyoday_Logo_BG.png",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/Bhagyoday_Logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#2d1b3d"
     },
     "android": {
       "package": "com.killerp2542c.bhagyodaymobile",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/Bhagyoday_Logo.png",
+        "backgroundColor": "#2d1b3d"
       }
     },
     "ios": {
-      "icon": "./assets/icon.png"
+      "icon": "./assets/Bhagyoday_Logo_BG.png"
     },
     "plugins": [
       "expo-router",

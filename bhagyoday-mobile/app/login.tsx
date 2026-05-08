@@ -530,6 +530,8 @@ export default function Login() {
   // ── Entry animations ──────────────────────
   const logoScale     = useRef(new Animated.Value(0.5)).current;
   const logoRotate    = useRef(new Animated.Value(0)).current;
+  const logoPulse     = useRef(new Animated.Value(1)).current;
+  const logoGlow      = useRef(new Animated.Value(0)).current;
   const headerSlide   = useRef(new Animated.Value(-50)).current;
   const headerOpacity = useRef(new Animated.Value(0)).current;
   const cardSlide     = useRef(new Animated.Value(50)).current;
@@ -553,6 +555,29 @@ export default function Login() {
         Animated.timing(cardOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
       ]),
     ]).start();
+
+    // continuous subtle pulse and glow for the logo
+    const pulseLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(logoPulse, { toValue: 1.04, duration: 1500, useNativeDriver: true }),
+        Animated.timing(logoPulse, { toValue: 1, duration: 1500, useNativeDriver: true }),
+      ])
+    );
+
+    const glowLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(logoGlow, { toValue: 1, duration: 1800, useNativeDriver: true }),
+        Animated.timing(logoGlow, { toValue: 0, duration: 1800, useNativeDriver: true }),
+      ])
+    );
+
+    pulseLoop.start();
+    glowLoop.start();
+
+    return () => {
+      pulseLoop.stop();
+      glowLoop.stop();
+    };
   }, []);
 
   useEffect(() => {
@@ -740,16 +765,30 @@ export default function Login() {
             <Animated.View
               style={[
                 styles.logoWrapper,
-                { transform: [{ scale: logoScale }, { rotate: logoRotateDeg }], opacity: headerOpacity },
+                { transform: [{ scale: logoScale }, { rotate: logoRotateDeg }, { scale: logoPulse }], opacity: headerOpacity },
               ]}
             >
+              <Animated.View
+                style={[
+                  styles.headerGlow,
+                  {
+                    opacity: logoGlow.interpolate({ inputRange: [0, 1], outputRange: [0, 0.48] }),
+                    transform: [
+                      { scale: logoGlow.interpolate({ inputRange: [0, 1], outputRange: [1, 1.16] }) },
+                    ],
+                  },
+                ]}
+              />
+
               <LinearGradient
                 colors={['rgba(255,255,255,0.18)', 'rgba(255,255,255,0.05)']}
                 style={styles.logoCircle}
               >
-                <View style={styles.logoInner}>
-                  <Ionicons name="sparkles" size={36} color={PALETTE.rosegoldLight} />
-                </View>
+                  <Image
+                    source={require('../assets/Bhagyoday_Logo.png')}
+                    style={styles.logoImage}
+                    resizeMode="contain"
+                  />
               </LinearGradient>
             </Animated.View>
 
@@ -912,24 +951,38 @@ const styles = StyleSheet.create({
      * No fixed height — let content define it.
      * paddingBottom gives the card enough room to overlap.
      */
-    paddingBottom: 60,
+    paddingBottom: 84,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'flex-end',
     // paddingTop injected inline (insets.top + 20)
   },
 
-  logoWrapper: { marginBottom: 18 },
+  logoWrapper: { marginBottom: 22 },
+  headerGlow: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: PALETTE.rosegold,
+    top: -40,
+    alignSelf: 'center',
+  },
   logoCircle: {
-    width: 90, height: 90, borderRadius: 45,
+    width: 140, height: 140, borderRadius: 70,
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.2)',
+    shadowColor: PALETTE.rosegold,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.32,
+    shadowRadius: 28,
   },
   logoInner: {
-    width: 70, height: 70, borderRadius: 35,
-    backgroundColor: 'rgba(201,149,106,0.2)',
+    width: 120, height: 120, borderRadius: 60,
+    backgroundColor: 'rgba(201,149,106,0.12)',
     justifyContent: 'center', alignItems: 'center',
   },
+  logoImage: { width: 160, height: 160 },
   brandName: {
     fontSize: 26, fontWeight: '800', color: PALETTE.warmWhite,
     letterSpacing: 0.8, textAlign: 'center',

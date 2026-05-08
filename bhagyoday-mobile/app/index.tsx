@@ -12,6 +12,7 @@ import {
   Dimensions,
   Modal,
   Pressable,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, Stack, useFocusEffect } from 'expo-router';
@@ -231,13 +232,19 @@ export default function Dashboard() {
           </View>
 
           {/* Revenue */}
-          <Text style={styles.sectionTitle}>Revenue Overview</Text>
+          <View style={styles.sectionTitleWrap}>
+            <Ionicons name="wallet" size={24} color={PALETTE.rosegold} />
+            <Text style={styles.sectionTitle}>Revenue Overview</Text>
+          </View>
 
           <View style={styles.statsGrid}>
             <LinearGradient
               colors={['#FFFFFF', '#FFF7F1']}
               style={styles.statCard}
             >
+              <View style={styles.statCardHeader}>
+                <Ionicons name="calendar-outline" size={18} color={PALETTE.warning} />
+              </View>
               <Text style={styles.statLabel}>Today</Text>
 
               <Text style={styles.statValue}>
@@ -253,6 +260,9 @@ export default function Dashboard() {
               colors={['#FFFFFF', '#F8F2FF']}
               style={styles.statCard}
             >
+              <View style={styles.statCardHeader}>
+                <Ionicons name="bar-chart-outline" size={18} color="#3B82F6" />
+              </View>
               <Text style={styles.statLabel}>This Week</Text>
 
               <Text style={styles.statValue}>
@@ -268,6 +278,9 @@ export default function Dashboard() {
               colors={[PALETTE.plumMid, PALETTE.plum]}
               style={[styles.statCard, styles.statCardFull]}
             >
+              <View style={styles.statCardHeader}>
+                <Ionicons name="cash-outline" size={18} color="#fff" />
+              </View>
               <Text style={[styles.statLabel, { color: '#D9C5EA' }]}>
                 All Time Revenue
               </Text>
@@ -283,7 +296,10 @@ export default function Dashboard() {
           </View>
 
           {/* Top Services */}
-          <Text style={styles.sectionTitle}>Top Services</Text>
+          <View style={styles.sectionTitleWrap}>
+            <Ionicons name="sparkles" size={24} color={PALETTE.rosegold} />
+            <Text style={styles.sectionTitle}>Top Services</Text>
+          </View>
 
           <View style={styles.card}>
             {stats.top_services.length === 0 ? (
@@ -309,7 +325,10 @@ export default function Dashboard() {
           </View>
 
           {/* Stylists */}
-          <Text style={styles.sectionTitle}>Stylist Performance</Text>
+          <View style={styles.sectionTitleWrap}>
+            <Ionicons name="star" size={24} color={PALETTE.rosegold} />
+            <Text style={styles.sectionTitle}>Stylist Performance</Text>
+          </View>
 
           <View
             style={[styles.card, { marginBottom: 60 }]}
@@ -383,17 +402,23 @@ export default function Dashboard() {
       <View style={styles.glowTwo} />
 
       <View style={styles.headerContent}>
-        <View>
-          <Text style={styles.headerTitle}>Bhagyoday Parlour</Text>
+        <View style={styles.brandColumn}>
+          <Image
+            source={require('../assets/Bhagyoday_Logo.png')}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
 
-          <Text style={styles.headerSubtitle}>
-            Management Dashboard
-          </Text>
+          <View style={styles.brandTextWrap}>
+            <Text style={styles.headerTitle}>Bhagyoday Parlour</Text>
+            <Text style={styles.headerSubtitle}>Management Dashboard</Text>
+          </View>
         </View>
 
         <TouchableOpacity
           activeOpacity={0.9}
           onPress={() => setShowLogoutModal(true)}
+          style={styles.logoutButtonHeader}
         >
           <View style={styles.logoutButton}>
             <Ionicons name="log-out-outline" size={22} color="#fff" />
@@ -519,6 +544,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 34,
     borderBottomRightRadius: 34,
     overflow: 'hidden',
+    position: 'relative',
   },
 
   glowOne: {
@@ -543,7 +569,23 @@ const styles = StyleSheet.create({
 
   headerContent: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+
+  brandColumn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  headerLogo: {
+    width: 200,
+    height: 200,
+    marginBottom: -30,},
+
+  brandTextWrap: {
     alignItems: 'center',
   },
 
@@ -563,6 +605,19 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 120,
   },
+  logoutButtonOverlay: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 100,
+  },
+
+  logoutButtonHeader: {
+    position: 'absolute',
+    right: 1,
+    top: -30,
+  },
+
   logoutButton: {
     width: 52,
     height: 52,
@@ -571,7 +626,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
     borderWidth: 1,
-    marginLeft:10,
     borderColor: PALETTE.glassStroke,
   },
 
@@ -622,7 +676,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '800',
     color: PALETTE.textDark,
-    marginBottom: 14,
+  },
+
+  sectionTitleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 12,
   },
 
   statsGrid: {
@@ -642,6 +702,16 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 5 },
     elevation: 4,
+  },
+
+  statCardHeader: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
   },
 
   statCardFull: {
