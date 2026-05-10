@@ -184,7 +184,7 @@ const verifyOtpSession = async (env: Bindings, token: string) => {
 const sendOtpEmail = async (env: Bindings, email: string, otp: string) => {
   if (!env.BREVO_API_KEY) throw new Error('BREVO_API_KEY is not configured')
 
-  const senderEmail =  'sabhayaparth06@gmail.com'
+  const senderEmail =  'jcparth35@gmail.com'
   const senderName = 'Bhagyoday Parlour'
 
   const htmlContent = `
